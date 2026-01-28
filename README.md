@@ -1,1 +1,1 @@
-# mult-threaded-job-scheduler
+# multi-threaded-job-scheduler
