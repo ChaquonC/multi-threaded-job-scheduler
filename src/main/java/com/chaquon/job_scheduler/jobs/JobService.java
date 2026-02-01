@@ -1,13 +1,12 @@
 package com.chaquon.job_scheduler.jobs;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.Optional;
 import java.util.ArrayList;
 
-@Repository
+@Service
 public class JobService {
     private final DataSource dataSource;
 
@@ -23,21 +22,19 @@ public class JobService {
 
         return new Job(
                 rs.getLong("id"),
-                rs.getString("type"),
+                JobType.valueOf(rs.getString("type")),
                 args,
                 JobStatus.valueOf(rs.getString("status")),
                 rs.getInt("attempts"),
                 rs.getInt("max_attempts"),
-                rs.getTimestamp("next_run_at") != null
-                        ? rs.getTimestamp("next_run_at")
-                        : null,
                 rs.getTimestamp("created_at"),
                 rs.getTimestamp("updated_at"),
-                rs.getString("last_error")
+                rs.getString("last_error"),
+                rs.getObject("result")
         );
     }
 
-    public long createJob(JobRequest jobRequest) throws SQLException {
+    public Job createJob(JobRequest jobRequest) throws SQLException {
         String query = """
                 INSERT INTO jobs (
                     type,
@@ -45,10 +42,10 @@ public class JobService {
                     status,
                     attempts,
                     max_attempts,
-                    next_run_at,
                     created_at,
                     updated_at,
-                    last_error
+                    last_error,
+                    result
                 )
                 VALUES (
                     ?,
@@ -56,9 +53,9 @@ public class JobService {
                     ?,
                     0,
                     3,
+                    now(),
+                    now(),
                     NULL,
-                    now(),
-                    now(),
                     NULL
                 )
                 RETURNING id
@@ -70,17 +67,18 @@ public class JobService {
 
             ps.setString(1, jobRequest.jobType());
             ps.setArray(2, sqlArgs);
-            ps.setString(3, "PENDING");
+            ps.setString(3, JobStatus.PENDING.name());
 
             sqlArgs.free();
 
             ResultSet rs = ps.executeQuery();
             rs.next();
-            return rs.getLong("id");
+            long id = rs.getLong("id");
+            return getJobById(id);
         }
     }
 
-    public Optional<Job> getJobById(long jobId) throws SQLException {
+    public Job getJobById(long jobId) throws SQLException {
         String query = """
                 SELECT
                     id,
@@ -89,10 +87,10 @@ public class JobService {
                     status,
                     attempts,
                     max_attempts,
-                    next_run_at,
                     created_at,
                     updated_at,
-                    last_error
+                    last_error,
+                    result
                 FROM jobs
                 WHERE id = ?
                 """;
@@ -104,17 +102,15 @@ public class JobService {
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
-                    return Optional.empty();
+                    return null;
                 }
 
-                Job job = initJob(rs);
-
-                return Optional.of(job);
+                return initJob(rs);
             }
         }
     }
 
-    public ArrayList<Job> getJobsByType(String jobType, int numJobs)
+    public ArrayList<Job> getJobsByType(JobType jobType, int numJobs)
             throws SQLException {
 
         ArrayList<Job> jobs = new ArrayList<>();
@@ -126,11 +122,10 @@ public class JobService {
                     args,
                     status,
                     attempts,
-                    max_attempts,
-                    next_run_at,
                     created_at,
                     updated_at,
-                    last_error
+                    last_error,
+                    result
                 FROM jobs
                 WHERE type = ?
                 LIMIT ?;
@@ -138,7 +133,7 @@ public class JobService {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, jobType);
+            ps.setString(1, jobType.name());
             ps.setInt(2, numJobs);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -151,7 +146,7 @@ public class JobService {
         return jobs;
     }
 
-    public ArrayList<Job> getJobsByStatus(String status, int numJobs)
+    public ArrayList<Job> getJobsByStatus(JobStatus status, int numJobs)
             throws SQLException {
 
         ArrayList<Job> jobs = new ArrayList<>();
@@ -167,7 +162,8 @@ public class JobService {
                     next_run_at,
                     created_at,
                     updated_at,
-                    last_error
+                    last_error,
+                    result
                 FROM jobs
                 WHERE status = ?
                 LIMIT ?;
@@ -175,7 +171,8 @@ public class JobService {
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, status);
+
+            ps.setString(1, status.name());
             ps.setInt(2, numJobs);
 
             try (ResultSet rs = ps.executeQuery()) {
@@ -186,5 +183,27 @@ public class JobService {
             }
         }
         return jobs;
+    }
+
+    public void updateJob(Job job) throws SQLException {
+        String query = """
+                UPDATE jobs
+                SET
+                    status = ?
+                    updated_at = ?
+                    last_error = ?
+                    result = ?
+                WHERE id = ?
+                """;
+
+        try(Connection conn = dataSource.getConnection();
+            PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, job.getStatus().name());
+            ps.setTimestamp(2, job.getUpdatedAt());
+            ps.setString(3, job.getLastError());
+            ps.setObject(4, job.getResult());
+            ps.setLong(5, job.getId());
+        }
     }
 }
