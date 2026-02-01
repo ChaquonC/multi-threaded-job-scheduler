@@ -6,11 +6,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 
 @RestController
 public class API {
-    private final AtomicLong counter = new AtomicLong();
     @PostMapping("/jobs")
     public ResponseEntity<Job> postJob(@RequestBody JobRequest req) {
         // add job to the queue and return the job
@@ -29,5 +27,10 @@ public class API {
     @PutMapping("/jobs/{id}/cancel")
     public ResponseEntity<Job> cancelJob(@PathVariable long id) {
         // cancels the job specified
+    }
+
+    @GetMapping("/health")
+    public void healthCheck() {
+        System.out.println("DB user = " + System.getenv("DB_USER"));
     }
 }

@@ -4,5 +4,5 @@ import java.util.ArrayList;
 
 public record JobRequest(
         String jobType,
-        ArrayList<String> args
+        String[] args
 ) {}

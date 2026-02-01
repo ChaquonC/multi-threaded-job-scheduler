@@ -2,6 +2,7 @@ package com.chaquon.job_scheduler.worker;
 
 import com.chaquon.job_scheduler.jobs.Job;
 
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadedQueue {
@@ -14,11 +15,11 @@ public class ThreadedQueue {
         this.queue.add(job);
     }
 
-    public Job getNext() {
+    public Optional<Job> getNext() {
         Job nextJob = this.queue.poll();
         if (nextJob == null) {
             System.out.println("No items in queue");
         }
-        return nextJob;
+        return Optional.ofNullable(nextJob);
     }
 }
