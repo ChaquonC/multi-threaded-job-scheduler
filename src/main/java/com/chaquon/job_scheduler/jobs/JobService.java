@@ -63,7 +63,7 @@ public class JobService {
                 )
                 RETURNING id
                 """;
-        try (Connection conn = this.dataSource.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
             Array sqlArgs = conn.createArrayOf("text", jobRequest.args());
@@ -136,7 +136,7 @@ public class JobService {
                 LIMIT ?;
                 """;
 
-        try (Connection conn = this.dataSource.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, jobType);
             ps.setInt(2, numJobs);
@@ -173,7 +173,7 @@ public class JobService {
                 LIMIT ?;
                 """;
 
-        try (Connection conn = this.dataSource.getConnection();
+        try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, status);
             ps.setInt(2, numJobs);
