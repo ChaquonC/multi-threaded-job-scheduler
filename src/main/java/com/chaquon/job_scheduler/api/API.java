@@ -3,13 +3,11 @@ package com.chaquon.job_scheduler.api;
 import com.chaquon.job_scheduler.jobs.*;
 import com.chaquon.job_scheduler.worker.ThreadedQueue;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-@Component
 @RestController
 public class API {
     private final JobService jobService;

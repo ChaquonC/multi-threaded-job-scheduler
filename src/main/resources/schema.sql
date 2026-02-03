@@ -8,5 +8,5 @@ CREATE TABLE IF NOT EXISTS jobs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_error TEXT,
-  result BLOB
+  result BYTEA
 );
